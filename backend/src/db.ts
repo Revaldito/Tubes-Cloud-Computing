@@ -46,11 +46,7 @@ function getPgPool(): Pool {
       connectionString: process.env.DATABASE_URL,
       max: 15,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 10000,
       ssl: sslEnabled ? { rejectUnauthorized: false } : undefined,
-    });
-    dbState.pgPool.on("error", (err) => {
-      console.error("[Banatier Backend] PostgreSQL pool idle error:", err.message);
     });
   }
   return dbState.pgPool;
@@ -187,7 +183,7 @@ async function initializeSchemaAndSeed(): Promise<void> {
       await lockClient.query("SELECT pg_advisory_lock(8462819)");
       await runSchemaAndSeedBody();
     } finally {
-      await lockClient.query("SELECT pg_advisory_unlock(8462819)").catch(() => {});
+      await lockClient.query("SELECT pg_advisory_unlock(8462819)").catch(() => { });
       lockClient.release();
     }
     return;
@@ -430,7 +426,7 @@ async function runSchemaAndSeedBody(): Promise<void> {
   );
   await rawQuery(
     `ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS admin_whatsapp VARCHAR(30) NOT NULL DEFAULT '081219048439'`
-  ).catch(() => {});
+  ).catch(() => { });
   await rawQuery(
     `UPDATE store_settings SET admin_whatsapp = '081219048439' WHERE id = 1 AND admin_whatsapp = '081234567890'`
   );
@@ -440,7 +436,8 @@ async function runSchemaAndSeedBody(): Promise<void> {
   await rawQuery(
     `UPDATE store_settings SET payment_timeout_minutes = 10 WHERE id = 1 AND payment_timeout_minutes != 10`
   );
-  await rawQuery(`ALTER TABLE order_items ALTER COLUMN product_id DROP NOT NULL`).catch(() => {});
+  await rawQuery(`ALTER TABLE order_items ALTER COLUMN product_id DROP NOT NULL`).catch(() => { });
+  await rawQuery(`ALTER TABLE products ALTER COLUMN illustration_key TYPE TEXT`).catch(() => { });
 }
 
 export async function closeDatabase(): Promise<void> {

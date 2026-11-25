@@ -16,6 +16,7 @@ import {
   Eye,
   EyeOff,
   Snowflake,
+  Upload,
 } from "lucide-react";
 import { Navbar, type AdminTabKey } from "./Navbar";
 import { Footer } from "./Footer";
@@ -75,6 +76,47 @@ const ILLUSTRATION_OPTIONS = [
   { key: "banofee", label: "Banofee" },
   { key: "bolen", label: "Bolen Pisang" },
 ];
+
+const PRESET_KEYS = new Set(ILLUSTRATION_OPTIONS.map((o) => o.key));
+
+async function compressImageFileToDataUrl(file: File): Promise<string> {
+  if (!file.type.startsWith("image/")) {
+    throw new Error("Pilih file gambar (JPG, PNG, atau WebP).");
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    throw new Error("Ukuran foto maksimal 10 MB.");
+  }
+
+  const rawDataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("Gagal membaca file gambar."));
+    reader.readAsDataURL(file);
+  });
+
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const el = new Image();
+    el.onload = () => resolve(el);
+    el.onerror = () => reject(new Error("Format gambar tidak dapat dimuat."));
+    el.src = rawDataUrl;
+  });
+
+  const maxDim = 640;
+  const scale = Math.min(1, maxDim / Math.max(img.width || 1, img.height || 1));
+  const targetW = Math.max(1, Math.round(img.width * scale));
+  const targetH = Math.max(1, Math.round(img.height * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = targetW;
+  canvas.height = targetH;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return rawDataUrl;
+
+  ctx.fillStyle = "#FFFDF7";
+  ctx.fillRect(0, 0, targetW, targetH);
+  ctx.drawImage(img, 0, 0, targetW, targetH);
+  return canvas.toDataURL("image/jpeg", 0.82);
+}
 
 function catalogSnapshot(
   settings: StoreSettings,
@@ -300,6 +342,7 @@ export function AdminClient({
       setNewDesc("");
       setNewBasePrice(35000);
       setNewInitialQuota(20);
+      setNewIllustration("bolen");
       setNewThermalBag(false);
       setNewVariants([{ name: "Original", priceDelta: 0 }]);
       setNewAddons([]);
@@ -404,7 +447,7 @@ export function AdminClient({
         user={user}
         adminActiveTab={tab}
         onSelectAdminTab={(next) => requestTabChange(next)}
-        onBeforeNavigate={() => isCatalogNavigationBlocked()}
+        onBeforeNavigate={() => !isCatalogNavigationBlocked()}
       />
 
       {feedback && (
@@ -826,14 +869,44 @@ export function AdminClient({
                 >
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="flex flex-1 flex-wrap items-center gap-4">
-                      <div
-                        className="relative shrink-0 overflow-hidden rounded-xl border border-[#EFE0B4] bg-[#FFF3BC]"
-                        style={{ width: "80px", height: "64px" }}
+                      <label
+                        title="Klik untuk upload foto baru dari perangkat"
+                        className="group relative shrink-0 cursor-pointer overflow-hidden rounded-xl border border-[#EFE0B4] bg-[#FFF3BC]"
+                        style={{ width: "88px", height: "72px" }}
                       >
                         <ProductIllustration illustrationKey={prod.illustrationKey} />
-                      </div>
+                        <span className="absolute inset-0 flex items-center justify-center bg-[#382112]/55 text-[10px] font-bold text-[#FFFDF3] opacity-0 transition-opacity group-hover:opacity-100">
+                          Ganti Foto
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            e.target.value = "";
+                            if (!file) return;
+                            try {
+                              const dataUrl = await compressImageFileToDataUrl(file);
+                              setProducts((prev) =>
+                                prev.map((x) =>
+                                  x.id === prod.id ? { ...x, illustrationKey: dataUrl } : x
+                                )
+                              );
+                              notify(
+                                `Foto baru dipilih untuk "${prod.name}" — klik Simpan untuk menerapkan.`
+                              );
+                            } catch (err) {
+                              notify(
+                                err instanceof Error ? err.message : "Gagal memproses foto",
+                                "error"
+                              );
+                            }
+                          }}
+                        />
+                      </label>
 
-                      <div className="flex-1 min-w-[210px] space-y-2">
+                      <div className="flex-1 min-w-[220px] space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
                           <input
                             type="text"
@@ -848,22 +921,60 @@ export function AdminClient({
                             className="font-display rounded-xl border border-[#EFE0B4] bg-[#FFFDF7] px-3 py-1.5 text-base font-bold text-[#4A2E1B]"
                           />
 
+                          <label className="motion-btn inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-[#DFC98B] bg-[#FFF6C7] px-3 py-1.5 text-xs font-bold text-[#4A2E1B] hover:bg-[#F8C93A]/60">
+                            <Upload className="h-3.5 w-3.5" />
+                            <span>Upload Foto Baru</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                e.target.value = "";
+                                if (!file) return;
+                                try {
+                                  const dataUrl = await compressImageFileToDataUrl(file);
+                                  setProducts((prev) =>
+                                    prev.map((x) =>
+                                      x.id === prod.id ? { ...x, illustrationKey: dataUrl } : x
+                                    )
+                                  );
+                                  notify(
+                                    `Foto baru dipilih untuk "${prod.name}" — klik Simpan untuk menerapkan.`
+                                  );
+                                } catch (err) {
+                                  notify(
+                                    err instanceof Error ? err.message : "Gagal memproses foto",
+                                    "error"
+                                  );
+                                }
+                              }}
+                            />
+                          </label>
+
                           <select
-                            value={prod.illustrationKey}
-                            onChange={(e) =>
+                            value={
+                              PRESET_KEYS.has(prod.illustrationKey)
+                                ? prod.illustrationKey
+                                : "__custom__"
+                            }
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === "__custom__") return;
                               setProducts((prev) =>
                                 prev.map((x) =>
-                                  x.id === prod.id
-                                    ? { ...x, illustrationKey: e.target.value }
-                                    : x
+                                  x.id === prod.id ? { ...x, illustrationKey: val } : x
                                 )
-                              )
-                            }
+                              );
+                            }}
                             className="rounded-xl border border-[#EFE0B4] bg-[#FFFDF7] px-2.5 py-1.5 text-xs font-semibold text-[#4A2E1B]"
                           >
+                            {!PRESET_KEYS.has(prod.illustrationKey) && (
+                              <option value="__custom__">Foto: Gambar Kustom Baru</option>
+                            )}
                             {ILLUSTRATION_OPTIONS.map((opt) => (
                               <option key={opt.key} value={opt.key}>
-                                Foto: {opt.label}
+                                Foto Bawaan: {opt.label}
                               </option>
                             ))}
                           </select>
@@ -1356,18 +1467,56 @@ export function AdminClient({
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-[#4A2E1B]">Ikon Ilustrasi</label>
-                  <select
-                    value={newIllustration}
-                    onChange={(e) => setNewIllustration(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-[#EFE0B4] bg-white px-3 py-2 text-sm"
-                  >
-                    {ILLUSTRATION_OPTIONS.map((opt) => (
-                      <option key={opt.key} value={opt.key}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
+                  <label className="font-bold text-[#4A2E1B]">Foto Menu</label>
+                  <div className="mt-1 flex items-center gap-2">
+                    <div
+                      className="relative shrink-0 overflow-hidden rounded-xl border border-[#EFE0B4] bg-[#FFF3BC]"
+                      style={{ width: "48px", height: "40px" }}
+                    >
+                      <ProductIllustration illustrationKey={newIllustration} />
+                    </div>
+                    <label className="motion-btn inline-flex cursor-pointer items-center gap-1 rounded-xl border border-[#DFC98B] bg-[#FFF6C7] px-2.5 py-2 text-xs font-bold text-[#4A2E1B] hover:bg-[#F8C93A]/60">
+                      <Upload className="h-3.5 w-3.5" />
+                      <span>Upload</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          e.target.value = "";
+                          if (!file) return;
+                          try {
+                            const dataUrl = await compressImageFileToDataUrl(file);
+                            setNewIllustration(dataUrl);
+                          } catch (err) {
+                            notify(
+                              err instanceof Error ? err.message : "Gagal memproses foto",
+                              "error"
+                            );
+                          }
+                        }}
+                      />
+                    </label>
+                    <select
+                      value={PRESET_KEYS.has(newIllustration) ? newIllustration : "__custom__"}
+                      onChange={(e) => {
+                        if (e.target.value !== "__custom__") {
+                          setNewIllustration(e.target.value);
+                        }
+                      }}
+                      className="min-w-0 flex-1 rounded-xl border border-[#EFE0B4] bg-white px-2 py-2 text-xs"
+                    >
+                      {!PRESET_KEYS.has(newIllustration) && (
+                        <option value="__custom__">Foto Kustom</option>
+                      )}
+                      {ILLUSTRATION_OPTIONS.map((opt) => (
+                        <option key={opt.key} value={opt.key}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
 

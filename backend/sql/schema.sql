@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS products (
   requires_thermal_bag BOOLEAN NOT NULL DEFAULT FALSE,
   has_variants BOOLEAN NOT NULL DEFAULT FALSE,
   variant_label VARCHAR(80) NOT NULL DEFAULT 'Pilihan Varian',
-  illustration_key VARCHAR(50) NOT NULL DEFAULT 'strudel',
+  illustration_key TEXT NOT NULL DEFAULT 'strudel',
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   sort_order INTEGER NOT NULL DEFAULT 0
 );

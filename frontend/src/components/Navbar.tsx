@@ -40,9 +40,12 @@ export function Navbar({
   }
 
   async function handleLogout() {
-    if (onBeforeNavigate && !onBeforeNavigate()) return;
-    await fetch("/api/auth/logout", { method: "POST" });
-    window.location.href = "/login";
+    try {
+      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    } catch {
+      // Tetap lanjutkan redirect ke halaman login meski koneksi sempat terputus
+    }
+    window.location.assign("/login");
   }
 
   const isHome = pathname === "/";

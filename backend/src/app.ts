@@ -85,8 +85,8 @@ async function readJsonBody(req: IncomingMessage): Promise<Record<string, any>> 
   for await (const chunk of req) {
     const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
     totalBytes += buf.length;
-    if (totalBytes > 1024 * 1024) {
-      throw new BusinessRuleError("Ukuran payload melebihi batas maksimum (1 MB).", 413);
+    if (totalBytes > 2 * 1024 * 1024) {
+      throw new BusinessRuleError("Ukuran payload melebihi batas maksimum (2 MB).", 413);
     }
     chunks.push(buf);
   }
@@ -809,6 +809,10 @@ export async function handleApiRequest(
         const basePrice = Math.max(0, Math.floor(Number(body.basePrice ?? 0)));
         const requiresThermalBag = Boolean(body.requiresThermalBag ?? false);
         const illustrationKey = String(body.illustrationKey ?? "bolen").trim() || "bolen";
+        if (illustrationKey.startsWith("data:") && !illustrationKey.startsWith("data:image/")) {
+          sendJson(res, 400, { error: "Format file gambar tidak valid." });
+          return;
+        }
         const variantLabel = String(body.variantLabel ?? "Pilih Varian").trim() || "Pilih Varian";
         const initialQuota = Math.max(0, Math.floor(Number(body.initialQuota ?? 20)));
         const rawVariants: Array<{ name?: string; priceDelta?: number }> = Array.isArray(
@@ -986,6 +990,14 @@ export async function handleApiRequest(
         }
 
         if (kind === "product") {
+          const nextIllustrationKey = String(body.illustrationKey ?? "").trim();
+          if (
+            nextIllustrationKey.startsWith("data:") &&
+            !nextIllustrationKey.startsWith("data:image/")
+          ) {
+            sendJson(res, 400, { error: "Format file gambar tidak valid." });
+            return;
+          }
           await withTransaction(async (tx) => {
             const productId = Number(body.id);
             const submittedVariants = Array.isArray(body.variants) ? body.variants : [];

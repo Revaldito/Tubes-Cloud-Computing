@@ -287,6 +287,8 @@ async function runTests() {
   const afterCreateCatalog = await callApi("GET", "/api/catalog");
   assert.equal(afterCreateCatalog.json.products.length, 6);
 
+  const customPhotoDataUrl =
+    "data:image/jpeg;base64," + "A".repeat(120);
   const updateMenu = await callApi(
     "PATCH",
     "/api/admin/catalog",
@@ -298,6 +300,7 @@ async function runTests() {
       basePrice: 31000,
       isActive: true,
       requiresThermalBag: false,
+      illustrationKey: customPhotoDataUrl,
       totalQuota: 18,
       variants: [{ name: "Original", priceDelta: 0 }],
       addons: [],
@@ -305,6 +308,19 @@ async function runTests() {
     setCookie
   );
   assert.equal(updateMenu.statusCode, 200);
+  const afterPhotoUpdate = await callApi("GET", "/api/catalog");
+  const updatedProd = afterPhotoUpdate.json.products.find(
+    (p: { id: number }) => p.id === newProdId
+  );
+  assert.equal(updatedProd?.illustrationKey, customPhotoDataUrl);
+
+  const badDataScheme = await callApi(
+    "PATCH",
+    "/api/admin/catalog",
+    { kind: "product", id: newProdId, name: "X", shortDescription: "Y", illustrationKey: "data:text/html,xss" },
+    setCookie
+  );
+  assert.equal(badDataScheme.statusCode, 400);
 
   const deleteMenu = await callApi(
     "DELETE",

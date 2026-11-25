@@ -278,7 +278,8 @@ export function ProductIllustration({
   const isDirectUrl =
     illustrationKey.startsWith("/") ||
     illustrationKey.startsWith("http://") ||
-    illustrationKey.startsWith("https://");
+    illustrationKey.startsWith("https://") ||
+    illustrationKey.startsWith("data:image/");
 
   const resolved = isDirectUrl
     ? { src: illustrationKey, alt: "Menu Banatier", position: "50% 50%" }
