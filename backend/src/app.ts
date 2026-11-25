@@ -259,9 +259,7 @@ export async function handleApiRequest(
         res,
         200,
         { ok: true },
-        {
-          "Set-Cookie": `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`,
-        }
+        { "Set-Cookie": buildSessionSetCookieHeader("", 0) }
       );
       return;
     }

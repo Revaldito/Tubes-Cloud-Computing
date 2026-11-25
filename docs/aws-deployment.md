@@ -22,7 +22,7 @@ FRONTEND_ORIGIN="http://DNS_LOAD_BALANCER_ANDA"
 SERVER_INSTANCE_ID="aws-web-01"
 USE_HTTPS="false"
 
-DATABASE_URL="postgresql://postgres:PASSWORD_ANDA@ENDPOINT_RDS.ap-southeast-1.rds.amazonaws.com:5432/banatier"
+DATABASE_URL="postgresql://postgres:PASSWORD_ANDA@banatier-db.cj8oogsq298b.ap-southeast-2.rds.amazonaws.com:5432/banatier"
 DATABASE_SSL="true"
 
 JWT_SECRET="ganti-dengan-random-32-karakter-sama-di-semua-ec2"
@@ -30,6 +30,11 @@ WEBHOOK_SECRET="ganti-dengan-secret-webhook-sama-di-semua-ec2"
 ADMIN_INITIAL_PASSWORD="ganti-password-admin-kuat"
 PAYMENT_MODE="demo"
 ```
+
+> **Detail RDS Aktif (`ap-southeast-2` Sydney):**
+> - **DB Identifier:** `banatier-db` | **DB Name:** `banatier` | **Master User:** `postgres` | **Port:** `5432`
+> - **VPC:** `vpc-052ba90bf3e0ad20c` (pastikan semua EC2 & ALB dibuat di VPC dan Region `ap-southeast-2` ini)
+> - **RDS Security Group:** `banatier-rds-sg` (`sg-031bd0bb90212ac01`) — tambahkan Inbound Rule `PostgreSQL (5432)` dari Security Group EC2 Anda.
 
 > **Catatan `USE_HTTPS`:** Biarkan `USE_HTTPS="false"` selama mengakses ALB menggunakan `http://...elb.amazonaws.com`. Ubah menjadi `USE_HTTPS="true"` hanya jika ALB sudah dipasangi sertifikat SSL/HTTPS (AWS ACM), agar cookie sesi login tetap tersimpan di browser.
 

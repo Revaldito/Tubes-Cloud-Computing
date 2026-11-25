@@ -46,7 +46,11 @@ function getPgPool(): Pool {
       connectionString: process.env.DATABASE_URL,
       max: 15,
       idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000,
       ssl: sslEnabled ? { rejectUnauthorized: false } : undefined,
+    });
+    dbState.pgPool.on("error", (err) => {
+      console.error("[Banatier Backend] PostgreSQL pool idle error:", err.message);
     });
   }
   return dbState.pgPool;
