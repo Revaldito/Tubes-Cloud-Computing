@@ -7,29 +7,30 @@ Jalankan mandiri: python tests_py/test_02_login_register_page.py
 from __future__ import annotations
 
 import time
-from test_helper import BanatierTestClient, PageTestSuite
+from test_helper import ADMIN_EMAIL, ADMIN_PASSWORD, BanatierTestClient, PageTestSuite
 
 
 def run_suite() -> tuple[int, int]:
     suite = PageTestSuite("Halaman 02 - Login, Registrasi & Redirect Role (/login)")
     client = BanatierTestClient()
 
-    # 1. Guest membuka halaman /login
+    # 1. Guest membuka halaman /login (bersih tanpa Akun Demo Siap Pakai)
     def test_guest_open_login() -> str:
         client.clear_cookies()
         status, html, _, _ = client.get_page("/login", follow_redirects=False)
         assert status == 200, f"Guest membuka /login seharusnya 200, dapat {status}"
         assert "Masuk" in html, "Teks form 'Masuk' tidak ditemukan di /login"
-        return "Form login tampil normal (200 OK)"
+        assert "Akun Demo Siap Pakai" not in html, "Teks 'Akun Demo Siap Pakai' masih muncul di halaman publik /login"
+        return "Form login tampil bersih tanpa kredensial demo publik (200 OK)"
 
-    suite.check("Guest dapat membuka halaman /login (200 OK)", test_guest_open_login)
+    suite.check("Guest membuka /login bersih tanpa info akun demo (200 OK)", test_guest_open_login)
 
     # 2. Login dengan password salah wajib ditolak (401)
     def test_wrong_password() -> str:
         status, data, _ = client.api(
             "POST",
             "/api/auth/login",
-            {"email": "admin@banatier.id", "password": "password_salah_123"},
+            {"email": ADMIN_EMAIL, "password": "password_salah_123"},
         )
         assert status == 401, f"Login salah seharusnya 401, dapat {status}"
         assert "error" in data, "Pesan error tidak dikembalikan saat gagal login"
@@ -86,7 +87,7 @@ def run_suite() -> tuple[int, int]:
         status, data, _ = client.api(
             "POST",
             "/api/auth/login",
-            {"email": "admin@banatier.id", "password": "admin123"},
+            {"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD},
         )
         assert status == 200, f"Login Admin gagal ({status}): {data}"
         assert data.get("user", {}).get("role") == "admin", "Role bukan admin"

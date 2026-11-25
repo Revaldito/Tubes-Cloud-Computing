@@ -7,7 +7,7 @@ Jalankan mandiri: python tests_py/test_03_account_page.py
 from __future__ import annotations
 
 import time
-from test_helper import BanatierTestClient, PageTestSuite
+from test_helper import ADMIN_EMAIL, ADMIN_PASSWORD, BanatierTestClient, PageTestSuite
 
 
 def run_suite() -> tuple[int, int]:
@@ -31,7 +31,7 @@ def run_suite() -> tuple[int, int]:
         l_status, _, _ = client.api(
             "POST",
             "/api/auth/login",
-            {"email": "admin@banatier.id", "password": "admin123"},
+            {"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD},
         )
         assert l_status == 200, "Gagal login admin"
         status, html, headers, _ = client.get_page("/account", follow_redirects=False)

@@ -31,6 +31,5 @@ npm run dev
 
 Lalu buka **http://localhost:3000** di browser.
 
-## Akun Demo Siap Pakai
-- **Member (Diskon 10%):** `member@banatier.id` / `member123`
-- **Admin:** `admin@banatier.id` / `admin123`
+## Akun Administrator
+Kredensial khusus Admin dikelola secara privat melalui variabel `ADMIN_EMAIL` dan `ADMIN_PASSWORD` di dalam file `backend/.env` (tidak ditampilkan di halaman publik).

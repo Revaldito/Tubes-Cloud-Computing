@@ -27,7 +27,8 @@ DATABASE_SSL="true"
 
 JWT_SECRET="ganti-dengan-random-32-karakter-sama-di-semua-ec2"
 WEBHOOK_SECRET="ganti-dengan-secret-webhook-sama-di-semua-ec2"
-ADMIN_INITIAL_PASSWORD="ganti-password-admin-kuat"
+ADMIN_EMAIL="revaldito.admin@banatier.id"
+ADMIN_PASSWORD="ganti-password-admin-kuat"
 PAYMENT_MODE="demo"
 ```
 

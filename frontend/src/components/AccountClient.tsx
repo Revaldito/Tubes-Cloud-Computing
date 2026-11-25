@@ -302,12 +302,6 @@ export function AccountClient({
                     {loading ? "Memproses..." : tab === "login" ? "Masuk" : "Buat Akun"}
                   </button>
                 </form>
-
-                <div className="mt-6 border-t border-[#F4E9C8] pt-4 text-[11px] text-[#78583E]">
-                  <p className="font-bold text-[#4A2E1B]">Akun Demo Siap Pakai:</p>
-                  <p className="mt-0.5">Member: member@banatier.id / member123</p>
-                  <p>Admin: admin@banatier.id / admin123</p>
-                </div>
               </div>
             )}
           </div>

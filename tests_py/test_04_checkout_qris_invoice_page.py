@@ -7,7 +7,7 @@ Jalankan mandiri: python tests_py/test_04_checkout_qris_invoice_page.py
 from __future__ import annotations
 
 from datetime import datetime
-from test_helper import BanatierTestClient, PageTestSuite
+from test_helper import ADMIN_EMAIL, ADMIN_PASSWORD, BanatierTestClient, PageTestSuite
 
 
 def _parse_iso(ts: str) -> datetime:
@@ -23,7 +23,7 @@ def run_suite() -> tuple[int, int]:
     admin_login_code, _, _ = admin_client.api(
         "POST",
         "/api/auth/login",
-        {"email": "admin@banatier.id", "password": "admin123"},
+        {"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD},
     )
     overview_code, overview, _ = admin_client.api("GET", "/api/admin/overview")
     was_po_open = True

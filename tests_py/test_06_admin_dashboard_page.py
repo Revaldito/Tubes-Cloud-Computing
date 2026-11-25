@@ -6,7 +6,7 @@ Jalankan mandiri: python tests_py/test_06_admin_dashboard_page.py
 
 from __future__ import annotations
 
-from test_helper import BanatierTestClient, PageTestSuite
+from test_helper import ADMIN_EMAIL, ADMIN_PASSWORD, BanatierTestClient, PageTestSuite
 
 
 def run_suite() -> tuple[int, int]:
@@ -32,9 +32,9 @@ def run_suite() -> tuple[int, int]:
     # 2. Login Admin & buka seluruh tab halaman /admin (orders, catalog, users)
     def test_admin_tabs_render() -> str:
         l_code, _, _ = admin_client.api(
-            "POST", "/api/auth/login", {"email": "admin@banatier.id", "password": "admin123"}
+            "POST", "/api/auth/login", {"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD}
         )
-        assert l_code == 200, "Gagal login menggunakan akun admin@banatier.id"
+        assert l_code == 200, f"Gagal login menggunakan akun Admin ({ADMIN_EMAIL})"
 
         for tab_query in ["/admin", "/admin?tab=catalog", "/admin?tab=users"]:
             p_code, html, _, _ = admin_client.get_page(tab_query, follow_redirects=False)

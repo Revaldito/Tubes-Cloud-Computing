@@ -6,7 +6,8 @@ Jalankan mandiri: python tests_py/test_05_orders_tracking_page.py
 
 from __future__ import annotations
 
-from test_helper import BanatierTestClient, PageTestSuite
+import time
+from test_helper import ADMIN_EMAIL, ADMIN_PASSWORD, BanatierTestClient, PageTestSuite
 
 
 def run_suite() -> tuple[int, int]:
@@ -15,9 +16,9 @@ def run_suite() -> tuple[int, int]:
     member_client = BanatierTestClient()
     admin_client = BanatierTestClient()
 
-    # Siapkan sesi Admin & Member bawaan (member@banatier.id / member123)
+    # Siapkan sesi Admin
     admin_client.api(
-        "POST", "/api/auth/login", {"email": "admin@banatier.id", "password": "admin123"}
+        "POST", "/api/auth/login", {"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD}
     )
     _, ov, _ = admin_client.api("GET", "/api/admin/overview")
     po_period = ov.get("poPeriod")
@@ -52,15 +53,22 @@ def run_suite() -> tuple[int, int]:
 
         suite.check("Guest dapat membuka halaman /orders berisi form Kode + Nomor WA", test_guest_orders_page)
 
-        # Buat 1 pesanan atas nama Member untuk diuji pelacakan Guest & riwayat Member
+        # Buat 1 pesanan atas nama Member baru untuk diuji pelacakan Guest & riwayat Member
         def test_member_create_and_history() -> str:
             nonlocal sample_order_code
-            l_status, _, _ = member_client.api(
+            test_email = f"riwayat.member.{int(time.time())}@banatier.id"
+            r_status, _, _ = member_client.api(
                 "POST",
-                "/api/auth/login",
-                {"email": "member@banatier.id", "password": "member123"},
+                "/api/auth/register",
+                {
+                    "name": "Pelanggan Member Uji",
+                    "email": test_email,
+                    "whatsapp": "081298765432",
+                    "password": "password123",
+                    "joinAsMember": True,
+                },
             )
-            assert l_status == 200, "Gagal login akun member@banatier.id"
+            assert r_status == 201, f"Gagal registrasi akun uji {test_email}"
             assert target_prod is not None, "Produk uji tidak tersedia"
 
             var_id = (

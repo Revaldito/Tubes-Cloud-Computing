@@ -6,6 +6,8 @@ process.env.PGLITE_DATA_DIR = "memory://";
 process.env.DATABASE_URL = "";
 process.env.PAYMENT_MODE = "demo";
 process.env.WEBHOOK_SECRET = "test-webhook-secret";
+process.env.ADMIN_EMAIL = "test-admin@banatier.local";
+process.env.ADMIN_PASSWORD = "TestAdmin#2026";
 
 import { dbQuery, resetTestDatabase } from "../src/db";
 import { calculateOrderTotals } from "../src/pricing";
@@ -237,9 +239,25 @@ async function runTests() {
   const unauthAdmin = await callApi("GET", "/api/admin/overview");
   assert.equal(unauthAdmin.statusCode, 403);
 
-  const adminLogin = await callApi("POST", "/api/auth/login", {
+  // Pastikan akun demo publik lama sudah tidak ada, dan registrasi pembeli asli berjalan normal
+  const oldDemoLogin = await callApi("POST", "/api/auth/login", {
     email: "admin@banatier.id",
     password: "admin123",
+  });
+  assert.equal(oldDemoLogin.statusCode, 401, "Akun demo admin publik lama wajib tidak aktif");
+
+  const regBuyer = await callApi("POST", "/api/auth/register", {
+    name: "Pelanggan Asli",
+    email: "pelanggan@banatier.id",
+    whatsapp: "081277776666",
+    password: "password123",
+    joinAsMember: true,
+  });
+  assert.equal(regBuyer.statusCode, 201);
+
+  const adminLogin = await callApi("POST", "/api/auth/login", {
+    email: "test-admin@banatier.local",
+    password: "TestAdmin#2026",
   });
   assert.equal(adminLogin.statusCode, 200);
   const setCookie = adminLogin.headers["set-cookie"]?.split(";")[0] ?? "";

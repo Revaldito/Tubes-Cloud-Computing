@@ -28,6 +28,30 @@ FRONTEND_URL = os.environ.get("BANATIER_FRONTEND_URL", "http://localhost:3000").
 BACKEND_URL = os.environ.get("BANATIER_BACKEND_URL", "http://127.0.0.1:4000").rstrip("/")
 
 
+def _load_backend_env_vars() -> Dict[str, str]:
+    out: Dict[str, str] = {}
+    env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "backend", ".env")
+    if not os.path.exists(env_path):
+        return out
+    try:
+        with open(env_path, "r", encoding="utf-8") as fh:
+            for raw in fh:
+                line = raw.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                k, v = line.split("=", 1)
+                val = v.strip().strip('"').strip("'")
+                out[k.strip()] = val
+    except Exception:
+        pass
+    return out
+
+
+_LOCAL_BACKEND_ENV = _load_backend_env_vars()
+ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL") or _LOCAL_BACKEND_ENV.get("ADMIN_EMAIL") or "admin-internal@banatier.local"
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD") or _LOCAL_BACKEND_ENV.get("ADMIN_PASSWORD") or "Banatier#Internal2026!"
+
+
 class NoRedirectHandler(urllib.request.HTTPRedirectHandler):
     """Mencegah urllib mengikuti redirect otomatis saat kita ingin mengecek kode 302/307."""
 

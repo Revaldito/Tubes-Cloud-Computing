@@ -225,19 +225,48 @@ async function runSchemaAndSeedBody(): Promise<void> {
     );
   }
 
-  const usersCount = await rawQuery<{ count: string }>(`SELECT COUNT(*)::text AS count FROM users`);
-  if (Number(usersCount.rows[0]?.count ?? 0) === 0) {
-    const initialAdminPassword = process.env.ADMIN_INITIAL_PASSWORD?.trim() || "admin123";
-    const adminHash = await bcrypt.hash(initialAdminPassword, 10);
-    const memberHash = await bcrypt.hash("member123", 10);
+  const adminEmail = (
+    process.env.ADMIN_EMAIL?.trim() || "admin-internal@banatier.local"
+  ).toLowerCase();
+  const adminPassword =
+    process.env.ADMIN_PASSWORD?.trim() ||
+    process.env.ADMIN_INITIAL_PASSWORD?.trim() ||
+    "Banatier#Internal2026!";
 
+  // Hapus akun demo publik lama jika belum pernah memiliki riwayat pesanan
+  await rawQuery(
+    `DELETE FROM users
+     WHERE email = 'member@banatier.id'
+       AND role = 'buyer'
+       AND id NOT IN (SELECT user_id FROM orders WHERE user_id IS NOT NULL)`
+  );
+
+  // Sinkronkan akun khusus Admin secara privat dari konfigurasi .env
+  const existingAdminRes = await rawQuery<{
+    id: number;
+    email: string;
+    password_hash: string;
+  }>(`SELECT id, email, password_hash FROM users WHERE role = 'admin' ORDER BY id ASC LIMIT 1`);
+
+  if (existingAdminRes.rows.length === 0) {
+    const adminHash = await bcrypt.hash(adminPassword, 10);
     await rawQuery(
-      `INSERT INTO users (name, email, whatsapp, password_hash, role, is_member, member_tier_slug) VALUES
-       ('Admin Banatier', 'admin@banatier.id', '081219048439', $1, 'admin', FALSE, 'non-member'),
-       ('Nadia Putri', 'member@banatier.id', '081298765432', $2, 'buyer', TRUE, 'member')
-       ON CONFLICT (email) DO NOTHING`,
-      [adminHash, memberHash]
+      `INSERT INTO users (name, email, whatsapp, password_hash, role, is_member, member_tier_slug)
+       VALUES ('Admin Banatier', $1, '081219048439', $2, 'admin', FALSE, 'non-member')
+       ON CONFLICT (email) DO UPDATE SET role = 'admin', password_hash = EXCLUDED.password_hash`,
+      [adminEmail, adminHash]
     );
+  } else {
+    const currentAdmin = existingAdminRes.rows[0];
+    const samePassword = await bcrypt.compare(adminPassword, currentAdmin.password_hash);
+    if (currentAdmin.email !== adminEmail || !samePassword) {
+      const adminHash = await bcrypt.hash(adminPassword, 10);
+      await rawQuery(`UPDATE users SET email = $1, password_hash = $2 WHERE id = $3`, [
+        adminEmail,
+        adminHash,
+        currentAdmin.id,
+      ]);
+    }
   }
 
   const productsCount = await rawQuery<{ count: string }>(
