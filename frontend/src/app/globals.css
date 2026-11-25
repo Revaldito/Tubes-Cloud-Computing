@@ -1,0 +1,166 @@
+@import "tailwindcss";
+@source "../";
+
+:root {
+  --bg-canvas: #fffdf3;
+  --bg-butter: #fff6c7;
+  --bg-butter-soft: #fff9da;
+  --bg-card: #fffbeb;
+  --banana-gold: #f8c93a;
+  --banana-gold-hover: #eab522;
+  --caramel: #b86b23;
+  --cocoa: #4a2e1b;
+  --cocoa-deep: #382112;
+  --cocoa-muted: #78583e;
+  --border-warm: #efe0b4;
+  --leaf-green: #5c8d1e;
+  --leaf-bg: #e7f5c8;
+  --rose-alert: #dc2626;
+  --rose-bg: #fee2e2;
+  --ease-out-quart: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@layer base {
+  html {
+    background-color: var(--bg-canvas);
+    color: var(--cocoa);
+    font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      sans-serif;
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-canvas);
+    color: var(--cocoa);
+    min-height: 100vh;
+    overscroll-behavior: none;
+  }
+}
+
+.font-display,
+.font-serif-editorial {
+  font-family: "Outfit", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.font-mono-num {
+  font-family: "Outfit", monospace;
+  letter-spacing: 0.02em;
+}
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes modalScaleIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes drawerSlideLeft {
+  from {
+    opacity: 0.6;
+    transform: translate3d(100%, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes backdropFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-page-in {
+  animation: fadeSlideUp 380ms var(--ease-out-quart) both;
+  will-change: transform, opacity;
+}
+
+.animate-modal-in {
+  animation: modalScaleIn 240ms var(--ease-out-quart) both;
+  will-change: transform, opacity;
+}
+
+.animate-drawer-in {
+  animation: drawerSlideLeft 280ms var(--ease-out-quart) both;
+  will-change: transform, opacity;
+}
+
+.animate-backdrop-in {
+  animation: backdropFadeIn 200ms ease-out both;
+}
+
+.motion-btn {
+  transition: transform 180ms var(--ease-out-quart), background-color 180ms ease,
+    border-color 180ms ease, color 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
+  transform: translateZ(0);
+}
+
+.motion-btn:hover:not(:disabled) {
+  transform: translate3d(0, -1.5px, 0);
+}
+
+.motion-btn:active:not(:disabled) {
+  transform: translate3d(0, 0, 0) scale(0.96);
+}
+
+.motion-card {
+  transition: transform 240ms var(--ease-out-quart), border-color 200ms ease,
+    box-shadow 240ms var(--ease-out-quart);
+  transform: translateZ(0);
+}
+
+.motion-card:hover {
+  transform: translate3d(0, -3px, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-page-in,
+  .animate-modal-in,
+  .animate-drawer-in,
+  .animate-backdrop-in {
+    animation: none !important;
+  }
+  .motion-btn,
+  .motion-card {
+    transition: none !important;
+  }
+}
+
+@media print {
+  header,
+  footer,
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #ffffff !important;
+  }
+  .print-receipt {
+    box-shadow: none !important;
+    border: 1px solid #d6c8a9 !important;
+  }
+}
