@@ -29,7 +29,8 @@ async function callApi(
   url: string,
   body?: unknown,
   cookie?: string,
-  origin?: string
+  origin?: string,
+  clientIp?: string
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<{ statusCode: number; json: any; headers: Record<string, string> }> {
   const payload = body ? Buffer.from(JSON.stringify(body), "utf8") : Buffer.alloc(0);
@@ -41,6 +42,7 @@ async function callApi(
     "content-type": "application/json",
     ...(cookie ? { cookie } : {}),
     ...(origin ? { origin } : {}),
+    ...(clientIp ? { "x-real-ip": clientIp } : {}),
   };
 
   const headers: Record<string, string> = {};
@@ -401,14 +403,50 @@ async function runTests() {
   assert.ok(confirmPaidRes.json.order.paidAt);
   console.log("✔ Konfirmasi Pembayaran: Simulasi demo nonaktif & konfirmasi bayar langsung ubah ke Diproses + Invoice");
 
-  // 11. CORS Origin Whitelist (blokir origin asing, izinkan FRONTEND_ORIGIN & same-host ALB)
+  // 11. CORS Origin Whitelist + Security Headers + Order Entropy + Brute-Force Rate Limit
   const evilCors = await callApi("GET", "/api/health", undefined, undefined, "https://evil.example.com");
   assert.notEqual(evilCors.headers["access-control-allow-origin"], "https://evil.example.com");
+  assert.equal(evilCors.headers["x-frame-options"], "DENY");
+  assert.equal(evilCors.headers["x-content-type-options"], "nosniff");
+  assert.equal(evilCors.headers["referrer-policy"], "strict-origin-when-cross-origin");
+
   const sameHostCors = await callApi("GET", "/api/health", undefined, undefined, "http://localhost:4000");
   assert.equal(sameHostCors.headers["access-control-allow-origin"], "http://localhost:4000");
-  console.log("✔ NFR Keamanan AWS: CORS memblokir origin asing dan mengizinkan same-host/FRONTEND_ORIGIN");
 
-  console.log("\nALL BACKEND ACCEPTANCE & HTTP API TESTS PASSED (13/13)");
+  assert.match(
+    winningOrder.orderCode,
+    /^BNT-\d{6}-[0-9A-F]{8}$/,
+    "Kode pesanan harus menggunakan 8 karakter hex acak (32-bit entropy)"
+  );
+
+  // Simulasi brute-force login dari 1 IP penyerang (batas 12x/menit -> ke-13 wajib diblokir 429)
+  let lastBruteStatus = 0;
+  for (let i = 1; i <= 13; i++) {
+    const attempt = await callApi(
+      "POST",
+      "/api/auth/login",
+      { email: "test-admin@banatier.local", password: `wrong-${i}` },
+      undefined,
+      undefined,
+      "203.0.113.77"
+    );
+    lastBruteStatus = attempt.statusCode;
+  }
+  assert.equal(lastBruteStatus, 429, "Percobaan brute-force ke-13 wajib ditolak 429 Rate Limited");
+
+  // Pengguna sah dari IP lain tetap bisa login normal tanpa terganggu
+  const legitUserLogin = await callApi(
+    "POST",
+    "/api/auth/login",
+    { email: "test-admin@banatier.local", password: "TestAdmin#2026" },
+    undefined,
+    undefined,
+    "198.51.100.12"
+  );
+  assert.equal(legitUserLogin.statusCode, 200);
+  console.log("✔ NFR Cyber Security: CORS, Security Headers, 32-bit Order Code & Anti Brute-Force (429) aktif");
+
+  console.log("\nALL BACKEND ACCEPTANCE & SECURITY TESTS PASSED (14/14)");
   process.exit(0);
 }
 

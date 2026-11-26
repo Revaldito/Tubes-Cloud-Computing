@@ -32,6 +32,47 @@ import {
 } from "./whatsapp";
 import type { OrderStatus, SessionUser } from "./types";
 
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync("banatier-constant-time-dummy-pad", 10);
+
+interface RateBucket {
+  count: number;
+  resetAt: number;
+}
+
+const rateBuckets = new Map<string, RateBucket>();
+
+function getClientIp(req: IncomingMessage): string {
+  const realIp = req.headers["x-real-ip"];
+  if (typeof realIp === "string" && realIp.trim()) return realIp.trim();
+  const xff = req.headers["x-forwarded-for"];
+  if (typeof xff === "string" && xff.trim()) {
+    return xff.split(",")[0].trim();
+  }
+  return req.socket?.remoteAddress || "127.0.0.1";
+}
+
+function isRateLimited(
+  req: IncomingMessage,
+  scope: string,
+  maxRequests: number,
+  windowMs: number
+): boolean {
+  const now = Date.now();
+  if (rateBuckets.size > 2000) {
+    for (const [k, v] of rateBuckets) {
+      if (v.resetAt <= now) rateBuckets.delete(k);
+    }
+  }
+  const key = `${scope}:${getClientIp(req)}`;
+  const existing = rateBuckets.get(key);
+  if (!existing || existing.resetAt <= now) {
+    rateBuckets.set(key, { count: 1, resetAt: now + windowMs });
+    return false;
+  }
+  existing.count += 1;
+  return existing.count > maxRequests;
+}
+
 function setCorsHeaders(req: IncomingMessage, res: ServerResponse): void {
   const configuredList = (process.env.FRONTEND_ORIGIN || "http://localhost:3000")
     .split(",")
@@ -59,6 +100,10 @@ function setCorsHeaders(req: IncomingMessage, res: ServerResponse): void {
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, Cookie");
   res.setHeader("Cache-Control", "no-store, max-age=0");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
 }
 
 function sendJson(
@@ -146,6 +191,15 @@ export async function handleApiRequest(
 
     // 3. Auth: Register
     if (method === "POST" && pathname === "/api/auth/register") {
+      if (isRateLimited(req, "auth-register", 10, 60_000)) {
+        sendJson(
+          res,
+          429,
+          { error: "Terlalu banyak percobaan pendaftaran. Silakan tunggu 1 menit." },
+          { "Retry-After": "60" }
+        );
+        return;
+      }
       const body = await readJsonBody(req);
       const name = String(body.name ?? "").trim();
       const email = String(body.email ?? "").trim().toLowerCase();
@@ -153,11 +207,11 @@ export async function handleApiRequest(
       const password = String(body.password ?? "");
       const joinAsMember = Boolean(body.joinAsMember ?? true);
 
-      if (name.length < 2) {
-        sendJson(res, 400, { error: "Nama lengkap minimal 2 karakter." });
+      if (name.length < 2 || name.length > 120) {
+        sendJson(res, 400, { error: "Nama lengkap harus 2–120 karakter." });
         return;
       }
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      if (email.length > 160 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         sendJson(res, 400, { error: "Format email tidak valid." });
         return;
       }
@@ -165,8 +219,8 @@ export async function handleApiRequest(
         sendJson(res, 400, { error: "Nomor WhatsApp tidak valid." });
         return;
       }
-      if (password.length < 6) {
-        sendJson(res, 400, { error: "Password minimal 6 karakter." });
+      if (password.length < 6 || password.length > 128) {
+        sendJson(res, 400, { error: "Password harus 6–128 karakter." });
         return;
       }
 
@@ -208,12 +262,21 @@ export async function handleApiRequest(
 
     // 4. Auth: Login
     if (method === "POST" && pathname === "/api/auth/login") {
+      if (isRateLimited(req, "auth-login", 12, 60_000)) {
+        sendJson(
+          res,
+          429,
+          { error: "Terlalu banyak percobaan login. Silakan tunggu 1 menit." },
+          { "Retry-After": "60" }
+        );
+        return;
+      }
       const body = await readJsonBody(req);
       const email = String(body.email ?? "").trim().toLowerCase();
       const password = String(body.password ?? "");
 
-      if (!email || !password) {
-        sendJson(res, 400, { error: "Email dan password wajib diisi." });
+      if (!email || !password || email.length > 160 || password.length > 128) {
+        sendJson(res, 400, { error: "Email dan password wajib diisi dengan benar." });
         return;
       }
 
@@ -229,7 +292,11 @@ export async function handleApiRequest(
       }>(`SELECT * FROM users WHERE email = $1`, [email]);
 
       const user = userRes.rows[0];
-      if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+      const passwordOk = await bcrypt.compare(
+        password,
+        user ? user.password_hash : DUMMY_PASSWORD_HASH
+      );
+      if (!user || !passwordOk) {
         sendJson(res, 401, { error: "Email atau password salah." });
         return;
       }
@@ -277,6 +344,15 @@ export async function handleApiRequest(
       }
 
       if (method === "POST") {
+        if (isRateLimited(req, "auth-activate", 10, 60_000)) {
+          sendJson(
+            res,
+            429,
+            { error: "Terlalu banyak permintaan. Silakan tunggu sebentar." },
+            { "Retry-After": "60" }
+          );
+          return;
+        }
         const user = await getRequestUser(req);
         if (!user) {
           sendJson(res, 401, { error: "Silakan login terlebih dahulu." });
@@ -331,6 +407,15 @@ export async function handleApiRequest(
       }
 
       if (method === "POST") {
+        if (isRateLimited(req, "checkout-create", 15, 60_000)) {
+          sendJson(
+            res,
+            429,
+            { error: "Terlalu banyak permintaan pemesanan. Silakan tunggu sebentar." },
+            { "Retry-After": "60" }
+          );
+          return;
+        }
         const user = await getRequestUser(req);
         const body = await readJsonBody(req);
         const order = await createCheckoutOrder({
@@ -360,6 +445,15 @@ export async function handleApiRequest(
 
     // 7b. Public Guest Order Tracking (`GET /api/orders/track?code=...&whatsapp=...`)
     if (method === "GET" && pathname === "/api/orders/track") {
+      if (isRateLimited(req, "order-track", 25, 60_000)) {
+        sendJson(
+          res,
+          429,
+          { error: "Terlalu banyak percobaan pelacakan. Silakan tunggu 1 menit." },
+          { "Retry-After": "60" }
+        );
+        return;
+      }
       const code = (parsedUrl.searchParams.get("code") ?? "").trim().toUpperCase();
       const whatsapp = (parsedUrl.searchParams.get("whatsapp") ?? "").trim();
 
@@ -398,6 +492,15 @@ export async function handleApiRequest(
     // 8. Orders: Customer Payment Confirmation (`/api/orders/:code/confirm-payment`)
     const confirmPaymentMatch = pathname.match(/^\/api\/orders\/([^/]+)\/confirm-payment$/);
     if (method === "POST" && confirmPaymentMatch) {
+      if (isRateLimited(req, "order-confirm", 20, 60_000)) {
+        sendJson(
+          res,
+          429,
+          { error: "Terlalu banyak permintaan konfirmasi. Silakan tunggu sebentar." },
+          { "Retry-After": "60" }
+        );
+        return;
+      }
       const code = decodeURIComponent(confirmPaymentMatch[1]);
       const existing = await getOrderByCode(code);
       if (!existing) {
@@ -473,6 +576,15 @@ export async function handleApiRequest(
     // 9. Orders: Single Order by Code (`/api/orders/:code`)
     const singleOrderMatch = pathname.match(/^\/api\/orders\/([^/]+)$/);
     if (method === "GET" && singleOrderMatch) {
+      if (isRateLimited(req, "order-read", 60, 60_000)) {
+        sendJson(
+          res,
+          429,
+          { error: "Terlalu banyak permintaan. Silakan tunggu sebentar." },
+          { "Retry-After": "60" }
+        );
+        return;
+      }
       const code = decodeURIComponent(singleOrderMatch[1]);
       const order = await getOrderByCode(code);
       if (!order) {
@@ -1163,8 +1275,9 @@ export async function handleApiRequest(
       sendJson(res, error.statusCode, { error: error.message });
       return;
     }
+    console.error("[Banatier API Unhandled Error]:", error);
     sendJson(res, 500, {
-      error: error instanceof Error ? error.message : "Internal Server Error",
+      error: "Terjadi kesalahan internal pada server.",
     });
   }
 }

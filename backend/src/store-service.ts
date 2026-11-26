@@ -340,7 +340,8 @@ function generateOrderCode(): string {
     2,
     "0"
   )}${String(now.getDate()).padStart(2, "0")}`;
-  const suffix = crypto.randomBytes(2).toString("hex").toUpperCase();
+  // 32-bit cryptographic entropy (4.29 billion combinations/day) prevents order enumeration
+  const suffix = crypto.randomBytes(4).toString("hex").toUpperCase();
   return `BNT-${ymd}-${suffix}`;
 }
 
@@ -360,8 +361,8 @@ export async function createCheckoutOrder(params: {
   const deliveryAddress = (params.deliveryAddress ?? "").trim();
   const notes = (params.notes ?? "").trim();
 
-  if (!recipientName) {
-    throw new BusinessRuleError("Nama penerima wajib diisi.");
+  if (!recipientName || recipientName.length > 120) {
+    throw new BusinessRuleError("Nama penerima wajib diisi (maksimal 120 karakter).");
   }
   if (!/^[0-9+\-\s]{9,20}$/.test(recipientWhatsapp)) {
     throw new BusinessRuleError("Nomor WhatsApp tidak valid.");
@@ -369,11 +370,14 @@ export async function createCheckoutOrder(params: {
   if (fulfillmentMethod !== "pickup" && fulfillmentMethod !== "delivery") {
     throw new BusinessRuleError("Metode penerimaan pesanan tidak valid.");
   }
-  if (fulfillmentMethod === "delivery" && deliveryAddress.length < 6) {
-    throw new BusinessRuleError("Alamat pengantaran wajib diisi lengkap.");
+  if (fulfillmentMethod === "delivery" && (deliveryAddress.length < 6 || deliveryAddress.length > 500)) {
+    throw new BusinessRuleError("Alamat pengantaran wajib diisi lengkap (6–500 karakter).");
   }
-  if (!Array.isArray(params.selections) || params.selections.length === 0) {
-    throw new BusinessRuleError("Keranjang pesanan masih kosong.");
+  if (notes.length > 500) {
+    throw new BusinessRuleError("Catatan pesanan maksimal 500 karakter.");
+  }
+  if (!Array.isArray(params.selections) || params.selections.length === 0 || params.selections.length > 30) {
+    throw new BusinessRuleError("Keranjang pesanan tidak valid.");
   }
 
   await expireOverdueOrders(true);

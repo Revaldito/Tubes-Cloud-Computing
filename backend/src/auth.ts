@@ -1,4 +1,5 @@
 import "./env";
+import crypto from "node:crypto";
 import { SignJWT, jwtVerify } from "jose";
 import type { IncomingMessage } from "node:http";
 import type { SessionUser } from "./types";
@@ -6,9 +7,24 @@ import { dbQuery } from "./db";
 
 export const SESSION_COOKIE_NAME = "banatier_session";
 
+const EPHEMERAL_FALLBACK_JWT_SECRET = crypto.randomBytes(32).toString("hex");
+let warnedFallbackJwt = false;
+
 function getJwtSecretKey(): Uint8Array {
-  const secret = process.env.JWT_SECRET || "banatier-default-stateless-jwt-secret-2026";
-  return new TextEncoder().encode(secret);
+  const configured = process.env.JWT_SECRET?.trim() || "";
+  if (
+    !configured ||
+    configured === "banatier-change-this-secret-in-aws-production-2026"
+  ) {
+    if (!warnedFallbackJwt) {
+      warnedFallbackJwt = true;
+      console.warn(
+        "[Banatier Security] JWT_SECRET belum dikonfigurasi unik; menggunakan kunci acak per-proses."
+      );
+    }
+    return new TextEncoder().encode(EPHEMERAL_FALLBACK_JWT_SECRET);
+  }
+  return new TextEncoder().encode(configured);
 }
 
 export async function signSessionToken(user: SessionUser): Promise<string> {

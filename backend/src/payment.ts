@@ -88,12 +88,18 @@ export async function renderQrisDataUrl(qrisString: string): Promise<string> {
   });
 }
 
+const EPHEMERAL_FALLBACK_WEBHOOK_SECRET = crypto.randomBytes(32).toString("hex");
+
 export function computeDemoWebhookSignature(
   orderCode: string,
   transactionStatus: string,
   grossAmount: number
 ): string {
-  const secret = process.env.WEBHOOK_SECRET || "banatier-local-webhook-secret";
+  const configured = process.env.WEBHOOK_SECRET?.trim() || "";
+  const secret =
+    configured && configured !== "banatier-webhook-hmac-secret-2026"
+      ? configured
+      : EPHEMERAL_FALLBACK_WEBHOOK_SECRET;
   return crypto
     .createHmac("sha256", secret)
     .update(`${orderCode}:${transactionStatus}:${grossAmount}`)
