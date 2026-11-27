@@ -191,7 +191,11 @@ export function StorefrontClient({
   }, [poPeriod, products]);
 
   useEffect(() => {
+    let lastSyncAt = Date.now();
     async function syncCatalog() {
+      const now = Date.now();
+      if (now - lastSyncAt < 5000) return;
+      lastSyncAt = now;
       try {
         const res = await fetch("/api/catalog", { cache: "no-store" });
         if (!res.ok) return;
@@ -349,12 +353,28 @@ export function StorefrontClient({
                 <div className="mt-7 flex flex-wrap items-center gap-3">
                   <a
                     href="#katalog-menu"
+                    onClick={(e) => {
+                      const el = document.getElementById("katalog-menu");
+                      if (el) {
+                        e.preventDefault();
+                        el.scrollIntoView({ behavior: "smooth", block: "start" });
+                        window.history.replaceState(null, "", "#katalog-menu");
+                      }
+                    }}
                     className="motion-btn inline-flex items-center justify-center rounded-full border border-[#E2B227] bg-[#F8C93A] px-6 py-3 text-xs sm:text-[13px] font-bold text-[#4A2E1B] shadow-[0_4px_14px_rgba(248,201,58,0.38)] hover:bg-[#EAB522]"
                   >
                     Lihat Menu
                   </a>
                   <a
                     href="#alur-po"
+                    onClick={(e) => {
+                      const el = document.getElementById("alur-po");
+                      if (el) {
+                        e.preventDefault();
+                        el.scrollIntoView({ behavior: "smooth", block: "start" });
+                        window.history.replaceState(null, "", "#alur-po");
+                      }
+                    }}
                     className="motion-btn inline-flex items-center justify-center rounded-full border-[1.5px] border-[#D9C077] bg-[#FFF6C7] px-6 py-3 text-xs sm:text-[13px] font-bold text-[#4A2E1B] hover:bg-[#FFEE99]"
                   >
                     Cara Pesan
@@ -385,7 +405,7 @@ export function StorefrontClient({
         {/* =========================================================
             2. MENU SECTION (Warm Butter Cards + Banana Gold Accents)
            ========================================================= */}
-        <section id="katalog-menu" className="mx-auto max-w-5xl px-5 py-16 sm:px-8 sm:py-22">
+        <section id="katalog-menu" className="scroll-mt-16 mx-auto max-w-5xl px-5 py-16 sm:px-8 sm:py-22">
           {!poOpen && (
             <div className="animate-page-in mb-8 flex items-start gap-3 rounded-2xl border border-[#F5C2C7] bg-[#FEE2E2]/80 p-4 text-xs text-[#991B1B] sm:items-center sm:px-5">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 sm:mt-0" />
@@ -436,10 +456,7 @@ export function StorefrontClient({
             </div>
           </div>
 
-          <div
-            key={categoryFilter}
-            className="animate-page-in mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
-          >
+          <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {filteredProducts.map((product) => (
               <ProductCardItem
                 key={product.id}
@@ -454,7 +471,7 @@ export function StorefrontClient({
         {/* =========================================================
             3. CARA PESAN (Warm Pastel Banana Band + Step 2 Atur Jadwal)
            ========================================================= */}
-        <section id="alur-po" className="border-y border-[#EFE0B4] bg-[#FFF6C7]/60">
+        <section id="alur-po" className="scroll-mt-16 border-y border-[#EFE0B4] bg-[#FFF6C7]/60">
           <div className="mx-auto max-w-5xl px-5 py-16 sm:px-8 sm:py-22">
             <div className="max-w-lg">
               <span className="text-[11px] font-bold uppercase tracking-widest text-[#5C8D1E]">

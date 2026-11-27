@@ -216,57 +216,54 @@ export async function getCatalogWithQuotas(includeInactive = false): Promise<{
   serverInstanceId: string;
   dbEngine: string;
 }> {
-  await expireOverdueOrders();
+  void expireOverdueOrders().catch(() => {});
 
-  const [settings, poPeriod, tiers] = await Promise.all([
-    getStoreSettings(),
-    getActivePoPeriod(),
-    getMemberTiers(),
-  ]);
-
-  const productsRes = await dbQuery<{
-    id: number;
-    slug: string;
-    name: string;
-    short_description: string;
-    base_price: number;
-    requires_thermal_bag: boolean;
-    has_variants: boolean;
-    variant_label: string;
-    illustration_key: string;
-    is_active: boolean;
-    sort_order: number;
-  }>(
-    includeInactive
-      ? `SELECT * FROM products ORDER BY sort_order ASC, id ASC`
-      : `SELECT * FROM products WHERE is_active = TRUE ORDER BY sort_order ASC, id ASC`
-  );
-
-  const [variantsRes, addonsRes, quotasRes] = await Promise.all([
-    dbQuery<{
-      id: number;
-      product_id: number;
-      name: string;
-      price_delta: number;
-      is_available: boolean;
-    }>(`SELECT * FROM product_variants ORDER BY sort_order ASC, id ASC`),
-    dbQuery<{
-      id: number;
-      product_id: number;
-      name: string;
-      price: number;
-      is_available: boolean;
-    }>(`SELECT * FROM product_addons ORDER BY sort_order ASC, id ASC`),
-    poPeriod
-      ? dbQuery<{
+  const [settings, poPeriod, tiers, productsRes, variantsRes, addonsRes, quotasRes] =
+    await Promise.all([
+      getStoreSettings(),
+      getActivePoPeriod(),
+      getMemberTiers(),
+      dbQuery<{
+        id: number;
+        slug: string;
+        name: string;
+        short_description: string;
+        base_price: number;
+        requires_thermal_bag: boolean;
+        has_variants: boolean;
+        variant_label: string;
+        illustration_key: string;
+        is_active: boolean;
+        sort_order: number;
+      }>(
+        includeInactive
+          ? `SELECT * FROM products ORDER BY sort_order ASC, id ASC`
+          : `SELECT * FROM products WHERE is_active = TRUE ORDER BY sort_order ASC, id ASC`
+      ),
+      dbQuery<{
+        id: number;
+        product_id: number;
+        name: string;
+        price_delta: number;
+        is_available: boolean;
+      }>(`SELECT * FROM product_variants ORDER BY sort_order ASC, id ASC`),
+      dbQuery<{
+        id: number;
+        product_id: number;
+        name: string;
+        price: number;
+        is_available: boolean;
+      }>(`SELECT * FROM product_addons ORDER BY sort_order ASC, id ASC`),
+      dbQuery<{
         product_id: number;
         total_quota: number;
         reserved_count: number;
-      }>(`SELECT product_id, total_quota, reserved_count FROM po_quotas WHERE po_period_id = $1`, [
-        poPeriod.id,
-      ])
-      : Promise.resolve({ rows: [] }),
-  ]);
+      }>(
+        `SELECT product_id, total_quota, reserved_count
+         FROM po_quotas
+         WHERE po_period_id = (SELECT id FROM po_periods ORDER BY is_active DESC, id DESC LIMIT 1)`
+      ),
+    ]);
 
   const quotaMap = new Map<number, { totalQuota: number; reservedCount: number }>();
   for (const q of quotasRes.rows) {
@@ -760,7 +757,7 @@ export async function listOrders(filter?: {
   userId?: number;
   poPeriodId?: number;
 }): Promise<OrderRecord[]> {
-  await expireOverdueOrders();
+  void expireOverdueOrders().catch(() => {});
 
   const clauses: string[] = [];
   const params: unknown[] = [];

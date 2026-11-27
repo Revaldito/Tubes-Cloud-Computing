@@ -11,6 +11,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { useCart } from "./CartProvider";
+import { BanatierLogoMark } from "./ProductIllustration";
 import type { PoPeriodSummary, SessionUser } from "@/lib/types";
 
 export type AdminTabKey = "orders" | "catalog" | "users";
@@ -51,6 +52,19 @@ export function Navbar({
   const isHome = pathname === "/";
   const isAdminUser = user?.role === "admin";
 
+  function handleSmoothSectionClick(
+    event: React.MouseEvent<HTMLAnchorElement>,
+    sectionId: string
+  ) {
+    if (!isHome) return;
+    const target = document.getElementById(sectionId);
+    if (target) {
+      event.preventDefault();
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+      window.history.replaceState(null, "", `#${sectionId}`);
+    }
+  }
+
   /* =========================================================
      ADMIN POV HEADER (No Cara Pesan / Cek Pesanan / Menu / Cart)
      ========================================================= */
@@ -62,20 +76,10 @@ export function Navbar({
     ];
 
     return (
-      <header className="sticky top-0 z-40 w-full border-b border-[#EFE0B4] bg-[#FFFBE8]/95 backdrop-blur-md">
+      <header className="sticky top-0 z-40 w-full border-b border-[#EFE0B4] bg-[#FFFBE8]">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-4 px-5 sm:px-8">
-          <Link href="/admin" onClick={handleGuardedNavigate} className="motion-btn flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#E6C86E] bg-[#FFF3B0]">
-              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden="true">
-                <path
-                  d="M6 16.5C10.5 18 16.5 14.5 18 7.5C19.2 12.2 15.8 18.8 9.2 19.2C7.4 19.3 6.2 18 6 16.5Z"
-                  fill="#F8C93A"
-                  stroke="#4A2E1B"
-                  strokeWidth="1.8"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </span>
+          <Link href="/admin" onClick={handleGuardedNavigate} className="motion-btn group flex items-center gap-2.5">
+            <BanatierLogoMark size={36} className="transition-transform duration-200 group-hover:-rotate-6 group-hover:scale-110" />
             <span className="font-display text-xl font-extrabold tracking-tight text-[#4A2E1B]">
               Banatier
             </span>
@@ -93,11 +97,10 @@ export function Navbar({
                     key={item.id}
                     type="button"
                     onClick={() => onSelectAdminTab(item.id)}
-                    className={`motion-btn hidden md:inline-flex rounded-full px-3.5 py-1.5 transition-colors ${
-                      active
-                        ? "bg-[#F8C93A] font-bold text-[#4A2E1B] shadow-2xs"
-                        : "text-[#78583E] hover:bg-[#FFF3B0]/60 hover:text-[#4A2E1B]"
-                    }`}
+                    className={`motion-btn hidden md:inline-flex rounded-full px-3.5 py-1.5 transition-colors ${active
+                      ? "bg-[#F8C93A] font-bold text-[#4A2E1B] shadow-2xs"
+                      : "text-[#78583E] hover:bg-[#FFF3B0]/60 hover:text-[#4A2E1B]"
+                      }`}
                   >
                     {item.label}
                   </button>
@@ -144,20 +147,10 @@ export function Navbar({
      CUSTOMER / GUEST HEADER
      ========================================================= */
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-[#EFE0B4] bg-[#FFFBE8]/90 backdrop-blur-md">
+    <header className="sticky top-0 z-40 w-full border-b border-[#EFE0B4] bg-[#FFFBE8]">
       <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-4 px-5 sm:px-8">
         <Link href="/" className="motion-btn group flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#E6C86E] bg-[#FFF3B0] transition-transform group-hover:scale-105">
-            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden="true">
-              <path
-                d="M6 16.5C10.5 18 16.5 14.5 18 7.5C19.2 12.2 15.8 18.8 9.2 19.2C7.4 19.3 6.2 18 6 16.5Z"
-                fill="#F8C93A"
-                stroke="#4A2E1B"
-                strokeWidth="1.8"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </span>
+          <BanatierLogoMark size={36} className="transition-transform duration-200 group-hover:-rotate-6 group-hover:scale-110" />
           <span className="font-display text-xl font-extrabold tracking-tight text-[#4A2E1B] sm:text-2xl">
             Banatier
           </span>
@@ -166,23 +159,24 @@ export function Navbar({
         <nav className="flex items-center gap-3 sm:gap-5 text-[13px] font-semibold text-[#78583E]">
           <Link
             href={isHome ? "#katalog-menu" : "/#katalog-menu"}
+            onClick={(e) => handleSmoothSectionClick(e, "katalog-menu")}
             className="hidden sm:inline-block transition-colors duration-150 hover:text-[#4A2E1B]"
           >
             Menu
           </Link>
           <Link
             href={isHome ? "#alur-po" : "/#alur-po"}
+            onClick={(e) => handleSmoothSectionClick(e, "alur-po")}
             className="hidden md:inline-block transition-colors duration-150 hover:text-[#4A2E1B]"
           >
             Cara Pesan
           </Link>
           <Link
             href="/orders"
-            className={`transition-colors duration-150 hover:text-[#4A2E1B] ${
-              pathname.startsWith("/orders")
-                ? "rounded-full bg-[#FFF3B0] px-3 py-1 font-bold text-[#4A2E1B]"
-                : ""
-            }`}
+            className={`transition-colors duration-150 hover:text-[#4A2E1B] ${pathname.startsWith("/orders")
+              ? "rounded-full bg-[#FFF3B0] px-3 py-1 font-bold text-[#4A2E1B]"
+              : ""
+              }`}
           >
             Cek Pesanan
           </Link>
@@ -212,11 +206,10 @@ export function Navbar({
           ) : (
             <Link
               href="/login"
-              className={`hidden sm:inline-block transition-colors duration-150 hover:text-[#4A2E1B] ${
-                pathname.startsWith("/login") || pathname.startsWith("/account")
-                  ? "rounded-full bg-[#FFF3B0] px-3 py-1 font-bold text-[#4A2E1B]"
-                  : ""
-              }`}
+              className={`hidden sm:inline-block transition-colors duration-150 hover:text-[#4A2E1B] ${pathname.startsWith("/login") || pathname.startsWith("/account")
+                ? "rounded-full bg-[#FFF3B0] px-3 py-1 font-bold text-[#4A2E1B]"
+                : ""
+                }`}
             >
               Masuk
             </Link>

@@ -26,7 +26,6 @@
     color: var(--cocoa);
     font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
       sans-serif;
-    scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
@@ -57,6 +56,7 @@
     opacity: 0;
     transform: translate3d(0, 12px, 0);
   }
+
   to {
     opacity: 1;
     transform: translate3d(0, 0, 0);
@@ -68,6 +68,7 @@
     opacity: 0;
     transform: translate3d(0, 14px, 0) scale(0.97);
   }
+
   to {
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(1);
@@ -79,6 +80,7 @@
     opacity: 0.6;
     transform: translate3d(100%, 0, 0);
   }
+
   to {
     opacity: 1;
     transform: translate3d(0, 0, 0);
@@ -89,61 +91,59 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
 }
 
 .animate-page-in {
-  animation: fadeSlideUp 380ms var(--ease-out-quart) both;
-  will-change: transform, opacity;
+  animation: fadeSlideUp 220ms var(--ease-out-quart) both;
 }
 
 .animate-modal-in {
-  animation: modalScaleIn 240ms var(--ease-out-quart) both;
-  will-change: transform, opacity;
+  animation: modalScaleIn 180ms var(--ease-out-quart) both;
 }
 
 .animate-drawer-in {
-  animation: drawerSlideLeft 280ms var(--ease-out-quart) both;
-  will-change: transform, opacity;
+  animation: drawerSlideLeft 200ms var(--ease-out-quart) both;
 }
 
 .animate-backdrop-in {
-  animation: backdropFadeIn 200ms ease-out both;
+  animation: backdropFadeIn 150ms ease-out both;
 }
 
 .motion-btn {
-  transition: transform 180ms var(--ease-out-quart), background-color 180ms ease,
-    border-color 180ms ease, color 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
-  transform: translateZ(0);
+  transition: transform 120ms var(--ease-out-quart), background-color 120ms ease,
+    border-color 120ms ease, color 120ms ease, opacity 120ms ease;
 }
 
 .motion-btn:hover:not(:disabled) {
-  transform: translate3d(0, -1.5px, 0);
+  transform: translateY(-1px);
 }
 
 .motion-btn:active:not(:disabled) {
-  transform: translate3d(0, 0, 0) scale(0.96);
+  transform: scale(0.97);
 }
 
 .motion-card {
-  transition: transform 240ms var(--ease-out-quart), border-color 200ms ease,
-    box-shadow 240ms var(--ease-out-quart);
-  transform: translateZ(0);
+  transition: transform 160ms var(--ease-out-quart), border-color 150ms ease,
+    box-shadow 160ms var(--ease-out-quart);
 }
 
 .motion-card:hover {
-  transform: translate3d(0, -3px, 0);
+  transform: translateY(-2px);
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .animate-page-in,
   .animate-modal-in,
   .animate-drawer-in,
   .animate-backdrop-in {
     animation: none !important;
   }
+
   .motion-btn,
   .motion-card {
     transition: none !important;
@@ -151,14 +151,17 @@
 }
 
 @media print {
+
   header,
   footer,
   .no-print {
     display: none !important;
   }
+
   body {
     background: #ffffff !important;
   }
+
   .print-receipt {
     box-shadow: none !important;
     border: 1px solid #d6c8a9 !important;

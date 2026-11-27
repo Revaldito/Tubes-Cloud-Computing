@@ -1,5 +1,6 @@
 import React from "react";
 import { Instagram, MessageCircle } from "lucide-react";
+import { BanatierLogoMark } from "./ProductIllustration";
 
 export function Footer(_props?: {
   serverInstanceId?: string;
@@ -10,17 +11,7 @@ export function Footer(_props?: {
       <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-4 px-5 py-8 sm:flex-row sm:px-8">
         <div className="flex flex-col items-center gap-1 sm:items-start">
           <div className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full border border-[#E6C86E] bg-[#FFF3B0]">
-              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" aria-hidden="true">
-                <path
-                  d="M6 16.5C10.5 18 16.5 14.5 18 7.5C19.2 12.2 15.8 18.8 9.2 19.2C7.4 19.3 6.2 18 6 16.5Z"
-                  fill="#F8C93A"
-                  stroke="#4A2E1B"
-                  strokeWidth="1.8"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </span>
+            <BanatierLogoMark size={28} />
             <span className="font-display text-lg font-extrabold tracking-tight text-[#4A2E1B]">
               banatier
             </span>

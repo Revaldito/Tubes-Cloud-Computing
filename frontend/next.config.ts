@@ -12,6 +12,42 @@ export default function nextConfig(phase: string): NextConfig {
     async headers() {
       return [
         {
+          source: "/menu/:path*",
+          headers: [
+            {
+              key: "Cache-Control",
+              value: "public, max-age=86400, stale-while-revalidate=604800",
+            },
+          ],
+        },
+        {
+          source: "/hero-banatier-v2.jpg",
+          headers: [
+            {
+              key: "Cache-Control",
+              value: "public, max-age=86400, stale-while-revalidate=604800",
+            },
+          ],
+        },
+        {
+          source: "/hero-banatier.jpg",
+          headers: [
+            {
+              key: "Cache-Control",
+              value: "public, max-age=86400, stale-while-revalidate=604800",
+            },
+          ],
+        },
+        {
+          source: "/qris-ayyas.jpg",
+          headers: [
+            {
+              key: "Cache-Control",
+              value: "public, max-age=86400, stale-while-revalidate=604800",
+            },
+          ],
+        },
+        {
           source: "/:path*",
           headers: [
             { key: "X-Frame-Options", value: "DENY" },

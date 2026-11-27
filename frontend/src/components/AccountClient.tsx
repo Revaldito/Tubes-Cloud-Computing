@@ -62,12 +62,13 @@ export function AccountClient({
         return;
       }
 
-      // Redirect based on role: Admin -> /admin, Member/Buyer -> / (landing page menu)
+      // Fast SPA redirect based on role: Admin -> /admin, Member/Buyer -> /
       if (data.user?.role === "admin") {
-        window.location.href = "/admin";
+        router.replace("/admin");
       } else {
-        window.location.href = "/";
+        router.replace("/");
       }
+      router.refresh();
     } catch {
       setError("Terjadi kesalahan koneksi.");
       setLoading(false);
@@ -194,11 +195,10 @@ export function AccountClient({
                       setTab("login");
                       setError("");
                     }}
-                    className={`motion-btn rounded-full px-4 py-1.5 font-bold ${
-                      tab === "login"
-                        ? "bg-[#F8C93A] text-[#4A2E1B] shadow-2xs"
-                        : "text-[#78583E]"
-                    }`}
+                    className={`motion-btn rounded-full px-4 py-1.5 font-bold ${tab === "login"
+                      ? "bg-[#F8C93A] text-[#4A2E1B] shadow-2xs"
+                      : "text-[#78583E]"
+                      }`}
                   >
                     Masuk
                   </button>
@@ -208,11 +208,10 @@ export function AccountClient({
                       setTab("register");
                       setError("");
                     }}
-                    className={`motion-btn rounded-full px-4 py-1.5 font-bold ${
-                      tab === "register"
-                        ? "bg-[#F8C93A] text-[#4A2E1B] shadow-2xs"
-                        : "text-[#78583E]"
-                    }`}
+                    className={`motion-btn rounded-full px-4 py-1.5 font-bold ${tab === "register"
+                      ? "bg-[#F8C93A] text-[#4A2E1B] shadow-2xs"
+                      : "text-[#78583E]"
+                      }`}
                   >
                     Daftar Akun
                   </button>

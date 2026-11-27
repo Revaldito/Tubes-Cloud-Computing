@@ -236,7 +236,6 @@ export function AdminClient({
     } else {
       setPoOpen(false);
     }
-    router.refresh();
   }
 
   async function handleOrderStatusChange(orderCode: string, status: OrderStatus) {
@@ -245,13 +244,13 @@ export function AdminClient({
       prev.map((o) =>
         o.orderCode === orderCode
           ? {
-              ...o,
-              status,
-              paidAt:
-                status === "diproses" || status === "siap" || status === "selesai"
-                  ? o.paidAt ?? new Date().toISOString()
-                  : null,
-            }
+            ...o,
+            status,
+            paidAt:
+              status === "diproses" || status === "siap" || status === "selesai"
+                ? o.paidAt ?? new Date().toISOString()
+                : null,
+          }
           : o
       )
     );
@@ -274,7 +273,7 @@ export function AdminClient({
         );
       }
       notify(`Status ${orderCode} diperbarui menjadi "${ORDER_STATUS_BADGE[status].label}"`);
-      await reloadOverview();
+      void reloadOverview();
     } catch {
       setOrders(previousOrders);
       notify("Gagal menghubungi server saat mengubah status pesanan");
@@ -286,6 +285,7 @@ export function AdminClient({
   async function handleTogglePoOpen() {
     if (!initialPoPeriod) return;
     const nextState = !poOpen;
+    setPoOpen(nextState);
     setBusy(true);
     try {
       const res = await fetch("/api/admin/po-periods", {
@@ -305,8 +305,12 @@ export function AdminClient({
             ? "Status PO AKTIF — Pelanggan kini dapat memesan di Landing Page."
             : "Status PO MATI — Info PO Ditutup kini tampil di Landing Page Customer."
         );
-        await reloadOverview();
+        void reloadOverview();
+      } else {
+        setPoOpen(!nextState);
       }
+    } catch {
+      setPoOpen(!nextState);
     } finally {
       setBusy(false);
     }
@@ -452,11 +456,10 @@ export function AdminClient({
 
       {feedback && (
         <div
-          className={`animate-modal-in fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full px-5 py-2.5 text-xs font-bold shadow-lg ${
-            feedbackTone === "error"
-              ? "bg-[#B8424C] text-[#FFFDF7]"
-              : "bg-[#4A2E1B] text-[#FFFDF3]"
-          }`}
+          className={`animate-modal-in fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full px-5 py-2.5 text-xs font-bold shadow-lg ${feedbackTone === "error"
+            ? "bg-[#B8424C] text-[#FFFDF7]"
+            : "bg-[#4A2E1B] text-[#FFFDF3]"
+            }`}
         >
           {feedback}
         </div>
@@ -478,11 +481,10 @@ export function AdminClient({
             type="button"
             disabled={busy}
             onClick={handleTogglePoOpen}
-            className={`motion-btn inline-flex items-center gap-2.5 rounded-full border px-5 py-2.5 text-xs font-extrabold shadow-2xs ${
-              poOpen
-                ? "border-[#B8DB7C] bg-[#E7F5C8] text-[#2F4C00] hover:bg-[#D8EEAE]"
-                : "border-[#F5C2C7] bg-[#FEE2E2] text-[#991B1B] hover:bg-[#FCD2D2]"
-            }`}
+            className={`motion-btn inline-flex items-center gap-2.5 rounded-full border px-5 py-2.5 text-xs font-extrabold shadow-2xs ${poOpen
+              ? "border-[#B8DB7C] bg-[#E7F5C8] text-[#2F4C00] hover:bg-[#D8EEAE]"
+              : "border-[#F5C2C7] bg-[#FEE2E2] text-[#991B1B] hover:bg-[#FCD2D2]"
+              }`}
           >
             <Power className="h-4 w-4" />
             <span>
@@ -507,11 +509,10 @@ export function AdminClient({
                 key={t.id}
                 type="button"
                 onClick={() => requestTabChange(t.id as AdminTabKey)}
-                className={`motion-btn inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold ${
-                  active
-                    ? "bg-[#4A2E1B] text-[#FFFDF3]"
-                    : "border border-[#EFE0B4] bg-white text-[#78583E] hover:bg-[#FFF6C7] hover:text-[#4A2E1B]"
-                }`}
+                className={`motion-btn inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold ${active
+                  ? "bg-[#4A2E1B] text-[#FFFDF3]"
+                  : "border border-[#EFE0B4] bg-white text-[#78583E] hover:bg-[#FFF6C7] hover:text-[#4A2E1B]"
+                  }`}
               >
                 <Icon className="h-3.5 w-3.5" />
                 <span>{t.label}</span>
@@ -541,11 +542,10 @@ export function AdminClient({
                       key={f.id}
                       type="button"
                       onClick={() => setStatusFilter(f.id as OrderStatus | "all")}
-                      className={`motion-btn rounded-full px-3 py-1 text-xs font-bold ${
-                        active
-                          ? "bg-[#F8C93A] text-[#4A2E1B]"
-                          : "border border-[#EFE0B4] bg-white text-[#78583E] hover:text-[#4A2E1B]"
-                      }`}
+                      className={`motion-btn rounded-full px-3 py-1 text-xs font-bold ${active
+                        ? "bg-[#F8C93A] text-[#4A2E1B]"
+                        : "border border-[#EFE0B4] bg-white text-[#78583E] hover:text-[#4A2E1B]"
+                        }`}
                     >
                       {f.label}
                     </button>
@@ -587,12 +587,10 @@ export function AdminClient({
                             {ord.items
                               .map(
                                 (it) =>
-                                  `${it.productNameSnapshot}${
-                                    it.variantNameSnapshot ? ` [${it.variantNameSnapshot}]` : ""
-                                  }${
-                                    it.addonsSnapshot.length
-                                      ? ` +${it.addonsSnapshot.map((a) => a.name).join(",")}`
-                                      : ""
+                                  `${it.productNameSnapshot}${it.variantNameSnapshot ? ` [${it.variantNameSnapshot}]` : ""
+                                  }${it.addonsSnapshot.length
+                                    ? ` +${it.addonsSnapshot.map((a) => a.name).join(",")}`
+                                    : ""
                                   } ×${it.quantity}`
                               )
                               .join(" · ")}
@@ -614,9 +612,8 @@ export function AdminClient({
                               {formatRupiah(ord.grandTotal)}
                             </span>
                             <span
-                              className={`text-[11px] font-bold ${
-                                ord.paidAt ? "text-[#5C8D1E]" : "text-[#855300]"
-                              }`}
+                              className={`text-[11px] font-bold ${ord.paidAt ? "text-[#5C8D1E]" : "text-[#855300]"
+                                }`}
                             >
                               {ord.paidAt ? "QRIS Lunas" : "Belum Lunas"}
                             </span>
@@ -861,11 +858,10 @@ export function AdminClient({
               {products.map((prod) => (
                 <div
                   key={prod.id}
-                  className={`rounded-3xl border p-6 text-xs transition-opacity ${
-                    prod.isActive
-                      ? "border-[#EFE0B4] bg-white"
-                      : "border-[#E5DEC9] bg-[#FAF7EF] opacity-80"
-                  }`}
+                  className={`rounded-3xl border p-6 text-xs transition-opacity ${prod.isActive
+                    ? "border-[#EFE0B4] bg-white"
+                    : "border-[#E5DEC9] bg-[#FAF7EF] opacity-80"
+                    }`}
                 >
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="flex flex-1 flex-wrap items-center gap-4">
@@ -1009,11 +1005,10 @@ export function AdminClient({
                             )
                           )
                         }
-                        className={`motion-btn inline-flex items-center gap-1 rounded-full border px-3 py-1.5 font-bold ${
-                          prod.isActive
-                            ? "border-[#C3DF8A] bg-[#E7F5C8] text-[#2F4C00]"
-                            : "border-[#E5DEC9] bg-white text-[#78583E]"
-                        }`}
+                        className={`motion-btn inline-flex items-center gap-1 rounded-full border px-3 py-1.5 font-bold ${prod.isActive
+                          ? "border-[#C3DF8A] bg-[#E7F5C8] text-[#2F4C00]"
+                          : "border-[#E5DEC9] bg-white text-[#78583E]"
+                          }`}
                       >
                         {prod.isActive ? (
                           <>
@@ -1129,18 +1124,18 @@ export function AdminClient({
                               prev.map((x) =>
                                 x.id === prod.id
                                   ? {
-                                      ...x,
-                                      variants: [
-                                        ...x.variants,
-                                        {
-                                          id: 0,
-                                          productId: prod.id,
-                                          name: "",
-                                          priceDelta: 0,
-                                          isAvailable: true,
-                                        },
-                                      ],
-                                    }
+                                    ...x,
+                                    variants: [
+                                      ...x.variants,
+                                      {
+                                        id: 0,
+                                        productId: prod.id,
+                                        name: "",
+                                        priceDelta: 0,
+                                        isAvailable: true,
+                                      },
+                                    ],
+                                  }
                                   : x
                               )
                             )
@@ -1166,13 +1161,13 @@ export function AdminClient({
                                     prev.map((x) =>
                                       x.id === prod.id
                                         ? {
-                                            ...x,
-                                            variants: x.variants.map((vx, idx) =>
-                                              idx === vIdx
-                                                ? { ...vx, name: e.target.value }
-                                                : vx
-                                            ),
-                                          }
+                                          ...x,
+                                          variants: x.variants.map((vx, idx) =>
+                                            idx === vIdx
+                                              ? { ...vx, name: e.target.value }
+                                              : vx
+                                          ),
+                                        }
                                         : x
                                     )
                                   )
@@ -1188,13 +1183,13 @@ export function AdminClient({
                                     prev.map((x) =>
                                       x.id === prod.id
                                         ? {
-                                            ...x,
-                                            variants: x.variants.map((vx, idx) =>
-                                              idx === vIdx
-                                                ? { ...vx, priceDelta: Number(e.target.value) }
-                                                : vx
-                                            ),
-                                          }
+                                          ...x,
+                                          variants: x.variants.map((vx, idx) =>
+                                            idx === vIdx
+                                              ? { ...vx, priceDelta: Number(e.target.value) }
+                                              : vx
+                                          ),
+                                        }
                                         : x
                                     )
                                   )
@@ -1208,9 +1203,9 @@ export function AdminClient({
                                     prev.map((x) =>
                                       x.id === prod.id
                                         ? {
-                                            ...x,
-                                            variants: x.variants.filter((_, idx) => idx !== vIdx),
-                                          }
+                                          ...x,
+                                          variants: x.variants.filter((_, idx) => idx !== vIdx),
+                                        }
                                         : x
                                     )
                                   )
@@ -1237,18 +1232,18 @@ export function AdminClient({
                               prev.map((x) =>
                                 x.id === prod.id
                                   ? {
-                                      ...x,
-                                      addons: [
-                                        ...x.addons,
-                                        {
-                                          id: 0,
-                                          productId: prod.id,
-                                          name: "",
-                                          price: 4000,
-                                          isAvailable: true,
-                                        },
-                                      ],
-                                    }
+                                    ...x,
+                                    addons: [
+                                      ...x.addons,
+                                      {
+                                        id: 0,
+                                        productId: prod.id,
+                                        name: "",
+                                        price: 4000,
+                                        isAvailable: true,
+                                      },
+                                    ],
+                                  }
                                   : x
                               )
                             )
@@ -1274,13 +1269,13 @@ export function AdminClient({
                                     prev.map((x) =>
                                       x.id === prod.id
                                         ? {
-                                            ...x,
-                                            addons: x.addons.map((ax, idx) =>
-                                              idx === aIdx
-                                                ? { ...ax, name: e.target.value }
-                                                : ax
-                                            ),
-                                          }
+                                          ...x,
+                                          addons: x.addons.map((ax, idx) =>
+                                            idx === aIdx
+                                              ? { ...ax, name: e.target.value }
+                                              : ax
+                                          ),
+                                        }
                                         : x
                                     )
                                   )
@@ -1296,13 +1291,13 @@ export function AdminClient({
                                     prev.map((x) =>
                                       x.id === prod.id
                                         ? {
-                                            ...x,
-                                            addons: x.addons.map((ax, idx) =>
-                                              idx === aIdx
-                                                ? { ...ax, price: Number(e.target.value) }
-                                                : ax
-                                            ),
-                                          }
+                                          ...x,
+                                          addons: x.addons.map((ax, idx) =>
+                                            idx === aIdx
+                                              ? { ...ax, price: Number(e.target.value) }
+                                              : ax
+                                          ),
+                                        }
                                         : x
                                     )
                                   )
@@ -1316,9 +1311,9 @@ export function AdminClient({
                                     prev.map((x) =>
                                       x.id === prod.id
                                         ? {
-                                            ...x,
-                                            addons: x.addons.filter((_, idx) => idx !== aIdx),
-                                          }
+                                          ...x,
+                                          addons: x.addons.filter((_, idx) => idx !== aIdx),
+                                        }
                                         : x
                                     )
                                   )

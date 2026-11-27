@@ -55,6 +55,7 @@ def run_suite() -> tuple[int, int]:
     # 4. Verifikasi Foto Asli Katalog & Gambar QRIS
     def test_static_images() -> str:
         required_assets = [
+            "/hero-banatier-v2.jpg",
             "/menu/bolen.jpg",
             "/menu/banofee.jpg",
             "/menu/split.jpg",
